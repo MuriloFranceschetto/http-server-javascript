@@ -53,7 +53,7 @@ const server = net.createServer((socket) => {
 
         } else if (userAgentPath.test(path)) {
             addResponseBody(socket, userAgent);
-            
+
         } else {
             socket.write("\r\n");
         }
@@ -62,7 +62,7 @@ const server = net.createServer((socket) => {
     });
 
 });
-
+ 
 server.listen(4221, "localhost", () => console.log("Server listening on port 4221"));
 
 
