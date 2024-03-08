@@ -10,14 +10,9 @@ const allowedPaths = [
     userAgentPath,
 ];
 
-function getHost(request) {
-    const [matchHostInfo] = request.match(RegExp('Host: .+'));
-    return matchHostInfo.split(': ')[1] || null;
-}
-
-function getUserAgent(request) {
-    const [matchUserAgentInfo] = request.match(RegExp('User-Agent: .+'));
-    return matchUserAgentInfo.split(': ')[1] || null;
+function getInfoHeaders(request, matchRegex) {
+    const [matchInfo] = request.match(matchRegex);
+    return matchInfo.split(': ')[1] || null;
 }
 
 function addResponseBody(socket, content) {
@@ -26,33 +21,39 @@ function addResponseBody(socket, content) {
 }
 
 const server = net.createServer((socket) => {
+    
     socket.on("close", () => {
         socket.end();
         server.close();
     });
+
     socket.on("data", (data) => {
-        const requestInfo = data.toString('utf8');
-        const [method, path, httpVersion] = requestInfo.trim().split(' ');
 
-        const host = getHost(requestInfo);
-        const userAgent = getUserAgent(requestInfo);
+        // const requestInfo = data.toString('utf8');
+        // const [method, path, httpVersion] = requestInfo.trim().split(' ');
 
-        if (!allowedPaths.some(allowedPath => path.match(allowedPath))) {
-            socket.write("HTTP/1.1 404 Not Found\r\n\r\n");
-            socket.end();
-            return;
-        }
+        // if (!allowedPaths.some(allowedPath => path.match(allowedPath))) {
+        //     socket.write("HTTP/1.1 404 Not Found\r\n\r\n");
+        //     return;
+        // }
 
-        socket.write("HTTP/1.1 200 OK\r\n");
+        // const host = getInfoHeaders(requestInfo, RegExp('Host: .+'));
+        // const userAgent = getInfoHeaders(requestInfo, RegExp('User-Agent: .+'));
 
-        if (path.match(echoPath)) {
-            const [,,content] = path.split('/');
-            addResponseBody(socket, content);
+        socket.write("HTTP/1.1 200 OK\r\n\r\n");
 
-        } else if (path.match(userAgentPath)) {
-            addResponseBody(socket, userAgent);
-        }
+        // if (path.match(echoPath)) {
+        //     const [,,content] = path.split('/');
+        //     addResponseBody(socket, content);
+
+        // } else if (path.match(userAgentPath)) {
+        //     addResponseBody(socket, userAgent);
+        
+        // } else {
+        //     addResponseBody(socket, '');
+        // }
     });
+
 });
 
 server.listen(4221, "localhost", () => console.log("Server listening on port 4221"));
