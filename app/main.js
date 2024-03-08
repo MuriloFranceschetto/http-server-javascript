@@ -2,7 +2,7 @@ const net = require("net");
 const fs = require('fs');
 const path = require('path');
 
-let directory = './';
+let directory = __dirname;
 let indexDirectoryArguments = process.argv.findIndex((el) => el === '--directory'); 
 if (indexDirectoryArguments >= 0) {
     directory = process.argv[indexDirectoryArguments + 1];
@@ -35,7 +35,7 @@ function addResponseFile(socket, fileContentBuffer) {
     socket.write(`Content-Length: ${fileContentBuffer.byteLength}\r\n\r\n${fileContentBuffer}`);
 }
 
-function addResponseTextBody(socket, content, status = 200) {
+function addResponseTextBody(socket, content, status = 200, message = 'OK') {
     socket.write(`HTTP/1.1 ${status} OK\r\n`);
     socket.write("Content-Type: text/plain\r\n");
     socket.write(`Content-Length: ${Buffer.byteLength(content)}\r\n\r\n${content}`);
@@ -43,7 +43,6 @@ function addResponseTextBody(socket, content, status = 200) {
 
 async function verifyFile(filePath) {
     let fullPath = path.join(directory, filePath);
-    console.log(`Buscando arquivo: ${fullPath}`);
     if (fs.existsSync(fullPath)) {
         return fs.readFileSync(fullPath);
     }
@@ -51,14 +50,13 @@ async function verifyFile(filePath) {
 }
 
 async function writeFile(filePath, fileContent) {
-    console.log(filePath, fileContent)
     let fullPath = path.join(directory, filePath);
-    console.log(`Salvando arquivo: ${fullPath}`);
-    fs.writeFileSync(filePath, fileContent)
+    fs.mkdirSync(directory, {recursive: true});
+    fs.writeFileSync(fullPath, fileContent);
 }
 
 async function error404(socket) {
-    socket.write("HTTP/1.1 404 Not Found\r\n\r\n");
+    socket.write("HTTP/1.1 404 Not Found\r\n\r\n"); 
     socket.end();
 }
 
@@ -97,7 +95,7 @@ const server = net.createServer((socket) => {
             }
             if (method === 'POST') {
                 await writeFile(filesMatch[1], bodyMessage);
-                addResponseTextBody(socket, '', 201);
+                addResponseTextBody(socket, '', 201, 'CREATED');
             }
 
         } else if (echoMatch) {
