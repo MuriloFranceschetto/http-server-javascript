@@ -6,10 +6,17 @@ const server = net.createServer((socket) => {
         server.close();
     });
     socket.on("data", (data) => {
-        socket.write("HTTP/1.1 200 OK\r\n\r\n");
+        const requestInfo = data.toString('utf8');
+        const [, path] = requestInfo.trim().split(' ');
+        if (path === '/') {
+            socket.write("HTTP/1.1 200 OK\r\n\r\n");
+        } else {
+            socket.write("HTTP/1.1 401 Not Found\r\n\r\n");
+        }
         socket.end();
+        socket.destroy();
     });
 });
 
 server.listen(4221, "localhost");
-console.log("Server listening on port 4221")
+console.log("Server listening on port 4221");
