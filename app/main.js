@@ -1,7 +1,15 @@
 const net = require("net");
+const fs = require('fs');
+const path = require('path');
+
+let directory = '/';
+let indexDirectoryArguments = process.argv.findIndex((el) => el === '--directory'); 
+if (indexDirectoryArguments >= 0) {
+    directory = process.argv[indexDirectoryArguments + 1];
+}
 
 const defaultPath = RegExp('^\/$');
-const echoPath = RegExp('^\/echo\/(.+)$'); // Changed regex to capture the entire path after echo/
+const echoPath = RegExp('^\/echo\/(.+)$');
 const userAgentPath = RegExp('^\/user-agent$');
 
 const allowedPaths = [
@@ -18,10 +26,23 @@ function getInfoHeaders(request, matchRegex) {
     return null;
 }
 
-function addResponseBody(socket, content) {
-    socket.write("Content-Type: text/plain\r\n");
-    socket.write(`Content-Length: ${Buffer.byteLength(content)}\r\n\r\n${content}`); // Use Buffer.byteLength to get correct content length
+function addResponseFile(socket, fileContentBuffer) {
+    socket.write("Content-Type: application/octet-stream\r\n");
+    socket.write(`Content-Length: ${fileContentBuffer.byteLength}\r\n\r\n${fileContentBuffer}`);
 }
+
+function addResponseTextBody(socket, content) {
+    socket.write("Content-Type: text/plain\r\n");
+    socket.write(`Content-Length: ${Buffer.byteLength(content)}\r\n\r\n${content}`);
+}
+
+async function verifyFile(filePath) {
+    let fullPath = path.join(__dirname, directory, filePath);
+    if (fs.existsSync(fullPath)) { 
+        return fs.readFileSync(fullPath);
+    }
+    return null;
+} 
 
 const server = net.createServer((socket) => {
     
@@ -30,29 +51,37 @@ const server = net.createServer((socket) => {
         server.close();
     });
 
-    socket.on("data", (data) => {
+    socket.on("data", async (data) => {
 
         const requestInfo = data.toString('utf8');
         const [method, path, httpVersion] = requestInfo.trim().split(' ');
 
+        let fileContent;
+
         if (!allowedPaths.some(allowedPath => allowedPath.test(path))) {
-            socket.write("HTTP/1.1 404 Not Found\r\n\r\n");
-            socket.end();
-            return;
+            fileContent = await verifyFile(path);
+            if (!fileContent) {
+                socket.write("HTTP/1.1 404 Not Found\r\n\r\n");
+                socket.end();
+                return;
+            }
         }
 
-        const host = getInfoHeaders(requestInfo, /^Host: (.+)$/m); // Use correct regular expression and multiline flag
-        const userAgent = getInfoHeaders(requestInfo, /^User-Agent: (.+)$/m); // Use correct regular expression and multiline flag
+        const host = getInfoHeaders(requestInfo, /^Host: (.+)$/m);
+        const userAgent = getInfoHeaders(requestInfo, /^User-Agent: (.+)$/m);
 
         socket.write("HTTP/1.1 200 OK\r\n");
 
         const echoMatch = path.match(echoPath);
-        if (echoMatch) {
+        if (fileContent) {
+            addResponseFile(socket, fileContent);
+
+        } else if (echoMatch) {
             const content = echoMatch[1];
-            addResponseBody(socket, content);
+            addResponseTextBody(socket, content);
 
         } else if (userAgentPath.test(path)) {
-            addResponseBody(socket, userAgent);
+            addResponseTextBody(socket, userAgent);
 
         } else {
             socket.write("\r\n");
