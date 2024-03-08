@@ -34,13 +34,14 @@ const server = net.createServer((socket) => {
 
         if (!allowedPaths.some(allowedPath => path.match(allowedPath))) {
             socket.write("HTTP/1.1 404 Not Found\r\n\r\n");
+            socket.end();
             return;
         }
 
         const host = getInfoHeaders(requestInfo, RegExp('Host: .+'));
         const userAgent = getInfoHeaders(requestInfo, RegExp('User-Agent: .+'));
 
-        socket.write("HTTP/1.1 200 OK\r\n\r\n");
+        socket.write("HTTP/1.1 200 OK\r\n");
 
         if (path.match(echoPath)) {
             const [,,content] = path.split('/');
@@ -50,8 +51,10 @@ const server = net.createServer((socket) => {
             addResponseBody(socket, userAgent);
         
         } else {
-            addResponseBody(socket, '');
+            socket.write("\r\n");
         }
+        
+        socket.end();
     });
 
 });
