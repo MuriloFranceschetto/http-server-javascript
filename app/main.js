@@ -44,7 +44,7 @@ const server = net.createServer((socket) => {
         socket.write("HTTP/1.1 200 OK\r\n");
 
         if (path.match(echoPath)) {
-            const [,,content] = path.split('/');
+            const [,content] = path.split('/echo/');
             addResponseBody(socket, content);
 
         } else if (path.match(userAgentPath)) {
@@ -53,7 +53,7 @@ const server = net.createServer((socket) => {
         } else {
             socket.write("\r\n");
         }
-        
+
         socket.end();
     });
 
