@@ -38,7 +38,7 @@ function addResponseTextBody(socket, content) {
 }
 
 async function verifyFile(filePath) {
-    let fullPath = path.join(__dirname, directory, filePath);
+    let fullPath = path.join(directory, filePath);
     if (fs.existsSync(fullPath)) { 
         return fs.readFileSync(fullPath);
     }
