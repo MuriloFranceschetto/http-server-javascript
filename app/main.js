@@ -2,7 +2,7 @@ const net = require("net");
 const fs = require('fs');
 const path = require('path');
 
-let directory = '/';
+let directory = './';
 let indexDirectoryArguments = process.argv.findIndex((el) => el === '--directory'); 
 if (indexDirectoryArguments >= 0) {
     directory = process.argv[indexDirectoryArguments + 1];
@@ -76,6 +76,8 @@ const server = net.createServer((socket) => {
         const userAgent = getInfoHeaders(requestInfo, /^User-Agent: (.+)$/m);
 
         const filesMatch = path.match(filesPath);
+        const echoMatch = path.match(echoPath);
+
         if (filesMatch) {
             fileContent = await verifyFile(filesMatch[1]);
             if (!fileContent) {
@@ -83,12 +85,8 @@ const server = net.createServer((socket) => {
                 return;
             }
             addResponseFile(socket, fileContent);
-        }
 
-        socket.write("HTTP/1.1 200 OK\r\n");
-            
-        const echoMatch = path.match(echoPath);
-        if (echoMatch) {
+        } else if (echoMatch) {
             const content = echoMatch[1];
             addResponseTextBody(socket, content);
 
@@ -96,8 +94,7 @@ const server = net.createServer((socket) => {
             addResponseTextBody(socket, userAgent);
 
         } else {
-            socket.write("HTTP/1.1 200 OK\r\n");
-            socket.write("\r\n");
+            socket.write("HTTP/1.1 200 OK\r\n\r\n");
         }
 
         socket.end();
