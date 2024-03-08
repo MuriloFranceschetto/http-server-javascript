@@ -11,12 +11,14 @@ console.log(`Configuration directory: ${directory}`);
 
 const defaultPath = RegExp('^\/$');
 const echoPath = RegExp('^\/echo\/(.+)$');
+const filesPath = RegExp('^\/files\/(.+)$');
 const userAgentPath = RegExp('^\/user-agent$');
 
 const allowedPaths = [
     defaultPath, 
     echoPath,
     userAgentPath,
+    filesPath,
 ];
 
 function getInfoHeaders(request, matchRegex) {
@@ -28,22 +30,30 @@ function getInfoHeaders(request, matchRegex) {
 }
 
 function addResponseFile(socket, fileContentBuffer) {
+    socket.write("HTTP/1.1 200 OK\r\n");
     socket.write("Content-Type: application/octet-stream\r\n");
     socket.write(`Content-Length: ${fileContentBuffer.byteLength}\r\n\r\n${fileContentBuffer}`);
 }
 
 function addResponseTextBody(socket, content) {
+    socket.write("HTTP/1.1 200 OK\r\n");
     socket.write("Content-Type: text/plain\r\n");
     socket.write(`Content-Length: ${Buffer.byteLength(content)}\r\n\r\n${content}`);
 }
 
 async function verifyFile(filePath) {
     let fullPath = path.join(directory, filePath);
-    if (fs.existsSync(fullPath)) { 
+    console.log(`Buscando arquivo: ${fullPath}`)
+    if (fs.existsSync(fullPath)) {
         return fs.readFileSync(fullPath);
     }
     return null; 
 } 
+
+async function error404(socket) {
+    socket.write("HTTP/1.1 404 Not Found\r\n\r\n");
+    socket.end();
+}
 
 const server = net.createServer((socket) => {
     
@@ -57,27 +67,28 @@ const server = net.createServer((socket) => {
         const requestInfo = data.toString('utf8');
         const [method, path, httpVersion] = requestInfo.trim().split(' ');
 
-        let fileContent;
-
         if (!allowedPaths.some(allowedPath => allowedPath.test(path))) {
-            fileContent = await verifyFile(path);
-            if (!fileContent) {
-                socket.write("HTTP/1.1 404 Not Found\r\n\r\n");
-                socket.end();
-                return;
-            }
+            error404(socket);
+            return;
         }
 
         const host = getInfoHeaders(requestInfo, /^Host: (.+)$/m);
         const userAgent = getInfoHeaders(requestInfo, /^User-Agent: (.+)$/m);
 
-        socket.write("HTTP/1.1 200 OK\r\n");
-
-        const echoMatch = path.match(echoPath);
-        if (fileContent) {
+        const filesMatch = path.match(filesPath);
+        if (filesMatch) {
+            fileContent = await verifyFile(filesMatch[1]);
+            if (!fileContent) {
+                error404(socket);
+                return;
+            }
             addResponseFile(socket, fileContent);
+        }
 
-        } else if (echoMatch) {
+        socket.write("HTTP/1.1 200 OK\r\n");
+            
+        const echoMatch = path.match(echoPath);
+        if (echoMatch) {
             const content = echoMatch[1];
             addResponseTextBody(socket, content);
 
@@ -85,6 +96,7 @@ const server = net.createServer((socket) => {
             addResponseTextBody(socket, userAgent);
 
         } else {
+            socket.write("HTTP/1.1 200 OK\r\n");
             socket.write("\r\n");
         }
 
