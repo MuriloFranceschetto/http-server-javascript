@@ -42,7 +42,7 @@ async function verifyFile(filePath) {
     if (fs.existsSync(fullPath)) { 
         return fs.readFileSync(fullPath);
     }
-    return null;
+    return null; 
 } 
 
 const server = net.createServer((socket) => {
