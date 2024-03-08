@@ -29,29 +29,29 @@ const server = net.createServer((socket) => {
 
     socket.on("data", (data) => {
 
-        // const requestInfo = data.toString('utf8');
-        // const [method, path, httpVersion] = requestInfo.trim().split(' ');
+        const requestInfo = data.toString('utf8');
+        const [method, path, httpVersion] = requestInfo.trim().split(' ');
 
-        // if (!allowedPaths.some(allowedPath => path.match(allowedPath))) {
-        //     socket.write("HTTP/1.1 404 Not Found\r\n\r\n");
-        //     return;
-        // }
+        if (!allowedPaths.some(allowedPath => path.match(allowedPath))) {
+            socket.write("HTTP/1.1 404 Not Found\r\n\r\n");
+            return;
+        }
 
-        // const host = getInfoHeaders(requestInfo, RegExp('Host: .+'));
-        // const userAgent = getInfoHeaders(requestInfo, RegExp('User-Agent: .+'));
+        const host = getInfoHeaders(requestInfo, RegExp('Host: .+'));
+        const userAgent = getInfoHeaders(requestInfo, RegExp('User-Agent: .+'));
 
         socket.write("HTTP/1.1 200 OK\r\n\r\n");
 
-        // if (path.match(echoPath)) {
-        //     const [,,content] = path.split('/');
-        //     addResponseBody(socket, content);
+        if (path.match(echoPath)) {
+            const [,,content] = path.split('/');
+            addResponseBody(socket, content);
 
-        // } else if (path.match(userAgentPath)) {
-        //     addResponseBody(socket, userAgent);
+        } else if (path.match(userAgentPath)) {
+            addResponseBody(socket, userAgent);
         
-        // } else {
-        //     addResponseBody(socket, '');
-        // }
+        } else {
+            addResponseBody(socket, '');
+        }
     });
 
 });
