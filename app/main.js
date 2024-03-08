@@ -7,6 +7,7 @@ let indexDirectoryArguments = process.argv.findIndex((el) => el === '--directory
 if (indexDirectoryArguments >= 0) {
     directory = process.argv[indexDirectoryArguments + 1];
 }
+console.log(`Configuration directory: ${directory}`);
 
 const defaultPath = RegExp('^\/$');
 const echoPath = RegExp('^\/echo\/(.+)$');
