@@ -1,13 +1,9 @@
-const net = require("net");
-const fs = require('fs');
-const path = require('path');
+import net, { Socket } from "net";
+import fs from 'fs';
+import path from 'path';
 
-let directory = __dirname;
-let indexDirectoryArguments = process.argv.findIndex((el) => el === '--directory'); 
-if (indexDirectoryArguments >= 0) {
-    directory = process.argv[indexDirectoryArguments + 1];
-}
-console.log(`Configuration directory: ${directory}`);
+const DIRECTORY = process.env.FILES_DIRECTORY ?? __dirname;
+console.log(`Configuration directory: ${DIRECTORY}`);
 
 const defaultPath = RegExp('^\/$');
 const echoPath = RegExp('^\/echo\/(.+)$');
@@ -15,13 +11,13 @@ const filesPath = RegExp('^\/files\/(.+)$');
 const userAgentPath = RegExp('^\/user-agent$');
 
 const allowedPaths = [
-    {allowedPath: defaultPath, allowedMethods: ['GET']}, 
-    {allowedPath: echoPath, allowedMethods: ['GET']}, 
-    {allowedPath: userAgentPath, allowedMethods: ['GET']}, 
-    {allowedPath: filesPath, allowedMethods: ['GET', 'POST']},
+    { allowedPath: defaultPath, allowedMethods: ['GET'] },
+    { allowedPath: echoPath, allowedMethods: ['GET'] },
+    { allowedPath: userAgentPath, allowedMethods: ['GET'] },
+    { allowedPath: filesPath, allowedMethods: ['GET', 'POST'] },
 ];
 
-function getInfoHeaders(request, matchRegex) {
+function getInfoHeaders(request: string, matchRegex: RegExp) {
     const match = request.match(matchRegex);
     if (match && match[1]) {
         return match[1].trim();
@@ -29,34 +25,34 @@ function getInfoHeaders(request, matchRegex) {
     return null;
 }
 
-function addResponseFile(socket, fileContentBuffer) {
+function addResponseFile(socket: Socket, fileContentBuffer: Buffer) {
     socket.write("HTTP/1.1 200 OK\r\n");
     socket.write("Content-Type: application/octet-stream\r\n");
     socket.write(`Content-Length: ${fileContentBuffer.byteLength}\r\n\r\n${fileContentBuffer}`);
 }
 
-function addResponseTextBody(socket, content, status = 200, message = 'OK') {
+function addResponseTextBody(socket: Socket, content: string = '', status: number = 200, message: string = 'OK') {
     socket.write(`HTTP/1.1 ${status} OK\r\n`);
     socket.write("Content-Type: text/plain\r\n");
     socket.write(`Content-Length: ${Buffer.byteLength(content)}\r\n\r\n${content}`);
 }
 
-async function verifyFile(filePath) {
-    let fullPath = path.join(directory, filePath);
+async function verifyFile(filePath: string): Promise<Buffer | null> {
+    let fullPath = path.join(DIRECTORY, filePath);
     if (fs.existsSync(fullPath)) {
         return fs.readFileSync(fullPath);
     }
-    return null; 
+    return null;
 }
 
-async function writeFile(filePath, fileContent) {
-    let fullPath = path.join(directory, filePath);
-    fs.mkdirSync(directory, {recursive: true});
+async function writeFile(filePath: string, fileContent: string) {
+    let fullPath = path.join(DIRECTORY, filePath);
+    fs.mkdirSync(DIRECTORY, { recursive: true });
     fs.writeFileSync(fullPath, fileContent);
 }
 
-async function error404(socket) {
-    socket.write("HTTP/1.1 404 Not Found\r\n\r\n"); 
+async function error404(socket: Socket) {
+    socket.write("HTTP/1.1 404 Not Found\r\n\r\n");
     socket.end();
 }
 
@@ -71,7 +67,7 @@ const server = net.createServer((socket) => {
         const requestInfo = data.toString('utf8');
         const [method, path, httpVersion] = requestInfo.trim().split(' ');
 
-        let pathConfig = allowedPaths.find(({allowedPath, allowedMethods}) => allowedPath.test(path) && allowedMethods.includes(method));
+        let pathConfig = allowedPaths.find(({ allowedPath, allowedMethods }) => allowedPath.test(path) && allowedMethods.includes(method));
         if (!pathConfig) {
             error404(socket);
             return;
@@ -86,7 +82,7 @@ const server = net.createServer((socket) => {
 
         if (filesMatch) {
             if (method === 'GET') {
-                fileContent = await verifyFile(filesMatch[1]);
+                const fileContent = await verifyFile(filesMatch[1]);
                 if (!fileContent) {
                     error404(socket);
                     return;
@@ -113,7 +109,7 @@ const server = net.createServer((socket) => {
     });
 
 });
- 
-server.listen(4221, "localhost", () => console.log("Server listening on port 4221"));
 
-
+server.listen(process.env.PORT, () => {
+    console.log(`Server listening on port ${process.env.PORT}`)
+});

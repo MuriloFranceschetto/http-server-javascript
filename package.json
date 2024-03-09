@@ -1,0 +1,32 @@
+{
+  "name": "http-server-javascript",
+  "version": "1.0.0",
+  "description": "Feito somente com bibliotecas nativas",
+  "main": "app/main.js",
+  "author": "Murilo Franceschetto",
+  "license": "ISC",
+  "homepage": "https://github.com/MuriloFranceschetto/http-server-javascript#readme",
+  "keywords": [
+    "javascript",
+    "http",
+    "server"
+  ],
+  "scripts": {
+    "start": "node --watch --env-file=.env ./node_modules/ts-node-dev/lib/bin.js app/main.ts"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/MuriloFranceschetto/http-server-javascript.git"
+  },
+  "bugs": {
+    "url": "https://github.com/MuriloFranceschetto/http-server-javascript/issues"
+  },
+  "devDependencies": {
+    "ts-node": "^10.9.2",
+    "ts-node-dev": "^2.0.0",
+    "typescript": "^5.4.2"
+  },
+  "dependencies": {
+    "@types/node": "^20.11.25"
+  }
+}
